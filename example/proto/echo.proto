@@ -1,0 +1,20 @@
+syntax = "proto3"; // 使用 proto3
+
+// java生成选项
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+
+package proto;
+
+message EchoResp {
+    string msg=1;
+}
+
+message EchoReq {
+}
+
+
+service EchoSvc {
+    rpc Echo(EchoReq) returns (EchoResp) {}
+}
