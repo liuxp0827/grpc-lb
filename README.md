@@ -8,9 +8,9 @@ grpc服务注册与发现，基于etcd/consul
 ```go
 type Metadata map[string]string
 
-type Instance struct {
+type App struct {
 	Env      string   `json:"env"`
-	App      string   `json:"app"`
+	Name     string   `json:"name"`
 	Addr     string   `json:"addr"`
 	Port     int      `json:"port"`
 	Metadata Metadata `json:"metadata"`
@@ -25,12 +25,12 @@ r, _ := etcdv3.New(clientv3.Config{
 })
 
 // 执行异步注册，注册失败或者连续10次renew失败，直接返回error
-errCh := r.Register(instance.Instance{
+errCh := r.Register(app.App{
 	Env:      "dev",
-	App:      "demo",
+	Name:      "demo",
 	Addr:     "127.0.0.1",
 	Port:     *port,
-	Metadata: instance.Metadata{"weight": strconv.Itoa(*weight)},
+	Metadata: app.Metadata{"weight": strconv.Itoa(*weight)},
 })
 
 go func() {
@@ -64,7 +64,7 @@ import (
 	"google.golang.org/grpc/balancer/roundrobin"
 )
 
-conn, err := grpc.Dial("consul://127.0.0.1:8500/app",
+conn, err := grpc.Dial("consul://127.0.0.1:8500/dev/demo",
 		grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name), grpc.WithBlock())
 ```
 类似的，使用`etcd`实现的方法：
