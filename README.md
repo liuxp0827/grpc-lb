@@ -1,4 +1,4 @@
-# grpc-discovery
+# grpc-lb
 grpc服务注册与发现，基于etcd/consul
 - 服务注册
 - 服务发现
@@ -10,7 +10,7 @@ type Metadata map[string]string
 
 type Instance struct {
 	Env      string   `json:"env"`
-	AppID    string   `json:"app_id"`
+	App      string   `json:"app"`
 	Addr     string   `json:"addr"`
 	Port     int      `json:"port"`
 	Metadata Metadata `json:"metadata"`
@@ -20,14 +20,14 @@ type Instance struct {
 ### 服务注册
 ```go
 r, _ := etcdv3.New(clientv3.Config{
-	Endpoints:   []string{"192.168.50.10:2379"},
+	Endpoints:   []string{"127.0.0.1:2379"},
 	DialTimeout: time.Second * 5,
 })
 
 // 执行异步注册，注册失败或者连续10次renew失败，直接返回error
 errCh := r.Register(instance.Instance{
 	Env:      "dev",
-	AppID:    "echo",
+	App:      "demo",
 	Addr:     "127.0.0.1",
 	Port:     *port,
 	Metadata: instance.Metadata{"weight": strconv.Itoa(*weight)},
@@ -56,23 +56,23 @@ scheme://authority/endpoint
 - authority: 指定etcd或者consul的连接地址
 - endpoint: 指定要发现的服务名称
 
-比如有个服务注册的`serviceName`为`app`，现在要使用`consul`实现，`consul`的地址为`192.168.50.12:8500`，则：
+比如有个服务注册的`serviceName`为`app`，现在要使用`consul`实现，`consul`的地址为`127.0.0.1:8500`，则：
 ```go
 import (
-    _ "github.com/liuxp0827/grpc-lb/internal/resolver/consul"
+    _ "github.com/liuxp0827/grpc-lb/resolver/consul"
 )
 
-conn, err := grpc.Dial("consul://192.168.50.12:8500/app",
+conn, err := grpc.Dial("consul://127.0.0.1:8500/app",
 		grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name), grpc.WithBlock())
 ```
 类似的，使用`etcd`实现的方法：
 ```go
 import (
-	_ "github.com/liuxp0827/grpc-lb/internal/resolver/etcdv3"
+	_ "github.com/liuxp0827/grpc-lb/resolver/etcdv3"
 )
 
 // etcd的多个地址使用`,`隔开
-conn, err := grpc.Dial("etcd://192.168.50.10:2379,192.168.50.11:2379,192.168.50.12:2379/dev/echo", grpc.WithInsecure(),
+conn, err := grpc.Dial("etcd://127.0.0.1:2379,127.0.0.1:2379,127.0.0.1:2379/dev/echo", grpc.WithInsecure(),
 	grpc.WithBalancerName(smooth_weighted.Name),
 	grpc.WithBlock())
 ```
