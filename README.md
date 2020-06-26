@@ -60,6 +60,8 @@ scheme://authority/endpoint
 ```go
 import (
     _ "github.com/liuxp0827/grpc-lb/resolver/consul"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/roundrobin"
 )
 
 conn, err := grpc.Dial("consul://127.0.0.1:8500/app",
@@ -69,10 +71,12 @@ conn, err := grpc.Dial("consul://127.0.0.1:8500/app",
 ```go
 import (
 	_ "github.com/liuxp0827/grpc-lb/resolver/etcdv3"
+	"github.com/liuxp0827/grpc-lb/internal/balancer/smooth_weighted"
+    "google.golang.org/grpc"
 )
 
 // etcd的多个地址使用`,`隔开
-conn, err := grpc.Dial("etcd://127.0.0.1:2379,127.0.0.1:2379,127.0.0.1:2379/dev/echo", grpc.WithInsecure(),
+conn, err := grpc.Dial("etcd://127.0.0.1:2379,127.0.0.1:2379,127.0.0.1:2379/dev/demo", grpc.WithInsecure(),
 	grpc.WithBalancerName(smooth_weighted.Name),
 	grpc.WithBlock())
 ```

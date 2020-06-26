@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"github.com/liuxp0827/grpc-lb/example/proto"
+	_ "github.com/liuxp0827/grpc-lb/resolver/consul"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"log"
-	"github.com/liuxp0827/grpc-lb/example/proto"
-	_ "github.com/liuxp0827/grpc-lb/resolver/consul"
 	"time"
 )
 

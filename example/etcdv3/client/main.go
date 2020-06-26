@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"google.golang.org/grpc"
-	"log"
 	"github.com/liuxp0827/grpc-lb/example/proto"
 	"github.com/liuxp0827/grpc-lb/internal/balancer/smooth_weighted"
 	_ "github.com/liuxp0827/grpc-lb/resolver/etcdv3"
+	"google.golang.org/grpc"
+	"log"
 )
 
 func main() {
