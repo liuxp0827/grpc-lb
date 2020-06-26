@@ -2,7 +2,7 @@ package smooth_weighted
 
 import (
 	"encoding/json"
-	"github.com/liuxp0827/grpc-lb/instance"
+	"github.com/liuxp0827/grpc-lb/app"
 	bl "google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"strconv"
@@ -42,7 +42,7 @@ func (*smoothWeightPickerBuilder) Build(info base.PickerBuildInfo) bl.V2Picker {
 			if md != nil {
 				weight = getWeight(*md)
 			}
-		case *instance.Metadata:
+		case *app.Metadata:
 			if md != nil {
 				weight = getWeight(*md)
 			}

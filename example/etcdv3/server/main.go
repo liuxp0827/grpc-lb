@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/liuxp0827/grpc-lb/app"
 	"github.com/liuxp0827/grpc-lb/example/proto"
-	"github.com/liuxp0827/grpc-lb/instance"
 	"github.com/liuxp0827/grpc-lb/registry/etcdv3"
 	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
@@ -55,12 +55,12 @@ func main() {
 	s := grpc.NewServer()
 	proto.RegisterEchoSvcServer(s, &EchoServer{})
 
-	errCh := r.Register(instance.Instance{
+	errCh := r.Register(app.App{
 		Env:      "dev",
-		App:      "demo",
+		Name:     "demo",
 		Addr:     "127.0.0.1",
 		Port:     *port,
-		Metadata: instance.Metadata{"weight": strconv.Itoa(*weight)},
+		Metadata: app.Metadata{"weight": strconv.Itoa(*weight)},
 	})
 
 	go func() {

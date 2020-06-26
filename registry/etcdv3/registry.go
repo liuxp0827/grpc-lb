@@ -3,7 +3,7 @@ package etcdv3
 import (
 	"context"
 	"fmt"
-	"github.com/liuxp0827/grpc-lb/instance"
+	"github.com/liuxp0827/grpc-lb/app"
 	"github.com/liuxp0827/grpc-lb/internal/logger"
 	"github.com/liuxp0827/grpc-lb/registry"
 	"go.etcd.io/etcd/clientv3"
@@ -40,7 +40,7 @@ type Options struct {
 
 type Registry struct {
 	mu       sync.Mutex
-	insts    map[string]*instance.Instance
+	apps     map[string]*app.App
 	doneOnce sync.Once
 	done     chan struct{}
 	client   *clientv3.Client
@@ -57,7 +57,7 @@ func New(cfg clientv3.Config, opts ...Option) (registry.Registry, error) {
 	}
 
 	r := &Registry{
-		insts:  make(map[string]*instance.Instance),
+		apps:   make(map[string]*app.App),
 		done:   make(chan struct{}),
 		opts:   new(Options),
 		client: client,
@@ -82,20 +82,20 @@ func New(cfg clientv3.Config, opts ...Option) (registry.Registry, error) {
 	return r, nil
 }
 
-func (r *Registry) Register(inst instance.Instance) <-chan error {
+func (r *Registry) Register(a app.App) <-chan error {
 	errCh := make(chan error, 1)
 
 	if dup := func() bool {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 
-		addr := fmt.Sprintf("%s:%d", inst.Addr, inst.Port)
+		addr := fmt.Sprintf("%s:%d", a.Addr, a.Port)
 
-		_, dup := r.insts[addr]
+		_, dup := r.apps[addr]
 		if dup {
 			return true
 		}
-		r.insts[addr] = &inst
+		r.apps[addr] = &a
 
 		return false
 	}(); dup {
@@ -113,8 +113,8 @@ func (r *Registry) Register(inst instance.Instance) <-chan error {
 	r.wg.Add(1)
 	go func() {
 		defer r.wg.Done()
-		key := path.Join(r.opts.prefix, inst.Env, inst.App, fmt.Sprintf("%s:%d", inst.Addr, inst.Port))
-		val := inst.Encode()
+		key := path.Join(r.opts.prefix, a.Env, a.Name, fmt.Sprintf("%s:%d", a.Addr, a.Port))
+		val := a.Encode()
 		cctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 		lease, err := r.client.Grant(cctx, r.opts.ttl)
 		cancel()

@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/liuxp0827/grpc-lb/app"
 	"github.com/liuxp0827/grpc-lb/example/proto"
-	"github.com/liuxp0827/grpc-lb/instance"
 	"github.com/liuxp0827/grpc-lb/internal/logger"
 	"github.com/liuxp0827/grpc-lb/registry/consul"
 	"google.golang.org/grpc"
@@ -44,9 +44,9 @@ func main() {
 	s := grpc.NewServer()
 	proto.RegisterEchoSvcServer(s, &EchoServer{})
 
-	errCh := r.Register(instance.Instance{
+	errCh := r.Register(app.App{
 		Env:  "dev",
-		App:  "demo",
+		Name: "demo",
 		Addr: "127.0.0.1",
 		Port: *port,
 	})

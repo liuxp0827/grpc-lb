@@ -3,7 +3,7 @@ package etcdv3
 import (
 	"context"
 	"fmt"
-	"github.com/liuxp0827/grpc-lb/instance"
+	"github.com/liuxp0827/grpc-lb/app"
 	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc/resolver"
 	"log"
@@ -35,7 +35,7 @@ func (r *etcdResolver) watch() {
 	}
 
 	var (
-		insts      = make(map[string]*instance.Instance)
+		apps      = make(map[string]*app.App)
 		rev        int64
 		retryTimes int
 		watchCh    clientv3.WatchChan
@@ -57,11 +57,11 @@ func (r *etcdResolver) watch() {
 		rev = resp.Header.Revision
 
 		for _, kv := range resp.Kvs {
-			inst := instance.Instance{}
-			inst.Decode(kv.Value)
-			insts[string(kv.Key)] = &inst
+			a := app.App{}
+			a.Decode(kv.Value)
+			apps[string(kv.Key)] = &a
 		}
-		addrs := r.insts2Addrs(insts)
+		addrs := r.insts2Addrs(apps)
 		r.cc.UpdateState(resolver.State{
 			Addresses: addrs,
 		})
@@ -103,11 +103,11 @@ func (r *etcdResolver) watch() {
 				ev.IsCreate()
 				switch ev.Type {
 				case clientv3.EventTypePut:
-					inst := instance.Instance{}
-					inst.Decode(ev.Kv.Value)
-					insts[key] = &inst
+					a := app.App{}
+					a.Decode(ev.Kv.Value)
+					apps[key] = &a
 				case clientv3.EventTypeDelete:
-					delete(insts, key)
+					delete(apps, key)
 				}
 			}
 		}
@@ -116,19 +116,19 @@ func (r *etcdResolver) watch() {
 			retryTimes = 0
 		}
 
-		addrs := r.insts2Addrs(insts)
+		addrs := r.insts2Addrs(apps)
 		r.cc.UpdateState(resolver.State{
 			Addresses: addrs,
 		})
 	}
 }
 
-func (r *etcdResolver) insts2Addrs(insts map[string]*instance.Instance) []resolver.Address {
+func (r *etcdResolver) insts2Addrs(insts map[string]*app.App) []resolver.Address {
 	addrs := make([]resolver.Address, 0, len(insts))
 	for _, v := range insts {
 		addr := resolver.Address{
 			Addr:       fmt.Sprintf("%s:%d", v.Addr, v.Port),
-			ServerName: v.App,
+			ServerName: v.Name,
 		}
 
 		// the addr.Metadata will be hashed, so we should use pointer

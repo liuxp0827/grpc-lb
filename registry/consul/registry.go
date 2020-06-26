@@ -3,7 +3,7 @@ package consul
 import (
 	"fmt"
 	"github.com/hashicorp/consul/api"
-	"github.com/liuxp0827/grpc-lb/instance"
+	"github.com/liuxp0827/grpc-lb/app"
 	"github.com/liuxp0827/grpc-lb/internal/logger"
 	"github.com/liuxp0827/grpc-lb/registry"
 	"sync"
@@ -12,7 +12,7 @@ import (
 
 type consulRegistry struct {
 	mu       sync.Mutex
-	insts    map[string]*instance.Instance
+	app    map[string]*app.App
 	doneOnce sync.Once
 	done     chan struct{}
 	client   *api.Client
@@ -39,7 +39,7 @@ func New(dc, addr string, l logger.Logger) (registry.Registry, error) {
 	}
 
 	r := &consulRegistry{
-		insts:  make(map[string]*instance.Instance),
+		app:  make(map[string]*app.App),
 		done:   make(chan struct{}),
 		client: client,
 		logger: l,
@@ -55,21 +55,21 @@ func (r *consulRegistry) Close() error {
 	return nil
 }
 
-func (r *consulRegistry) Register(inst instance.Instance) <-chan error {
+func (r *consulRegistry) Register(a app.App) <-chan error {
 	errCh := make(chan error, 1)
 
 	if dup := func() bool {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 
-		addr := fmt.Sprintf("%s:%d", inst.Addr, inst.Port)
+		addr := fmt.Sprintf("%s:%d", a.Addr, a.Port)
 
-		_, dup := r.insts[addr]
+		_, dup := r.app[addr]
 		if dup {
 			return dup
 		}
 
-		r.insts[addr] = &inst
+		r.app[addr] = &a
 		return false
 	}; dup() {
 		errCh <- registry.ErrDupRegister
@@ -88,23 +88,23 @@ func (r *consulRegistry) Register(inst instance.Instance) <-chan error {
 	go func() {
 		defer r.wg.Done()
 
-		svcId := fmt.Sprintf("%s-%s-%d", inst.App, inst.Addr, inst.Port)
-		if len(inst.Env) > 0 {
-			svcId = fmt.Sprintf("%s-%s", inst.Env, svcId)
+		svcId := fmt.Sprintf("%s-%s-%d", a.Name, a.Addr, a.Port)
+		if len(a.Env) > 0 {
+			svcId = fmt.Sprintf("%s-%s", a.Env, svcId)
 		}
 		checkId := svcId
-		svcName := inst.App
-		if len(inst.Env) > 0 {
-			svcName = fmt.Sprintf("%s/%s", inst.Env, svcName)
+		svcName := a.Name
+		if len(a.Env) > 0 {
+			svcName = fmt.Sprintf("%s/%s", a.Env, svcName)
 		}
 
 		err := r.client.Agent().ServiceRegister(&api.AgentServiceRegistration{
 			Kind:    api.ServiceKindTypical,
 			ID:      svcId,
 			Name:    svcName,
-			Address: inst.Addr,
-			Port:    inst.Port,
-			Meta:    inst.Metadata.ToMap(),
+			Address: a.Addr,
+			Port:    a.Port,
+			Meta:    a.Metadata.ToMap(),
 			Check: &api.AgentServiceCheck{
 				CheckID: checkId,
 				TTL:     "10s",
